@@ -17,19 +17,20 @@
 .def counter = r20
 ; main program start
 start:
+	;global interrupt disabled
 	cli
 	ldi counter, 0
-
+	;initializing stack pointer to the last RAM location
 	ldi r16, high(RAMEND) 
 	out sph, r16
 	ldi r16, low(RAMEND)
 	out spl, r16
 
-	;output for the leds
+	;setting port B as output for the leds
 	ldi r16, 0xff 
 	out ddrb, r16		
 
-	;Set Int rising edge
+	;Set Interrupt rising edge
 	ldi r16, (1<<isc00)|(1<<isc01)|(1<<isc10)|(1<<isc11)
 	sts eicra, r16
 
@@ -58,37 +59,37 @@ button_D2:
 	inc counter
 	nop
 	ldi r16, 0x01
-	cp r16,counter
+	cp r16,counter	;comparison when first time press GOOD
 	breq continue
 	ldi r16, 0x02
-	cp r16,counter
+	cp r16,counter	;comparison when second time press GOOD
 	breq continue
 	ldi r16, 0x03
-	cp r16,counter
+	cp r16,counter	;comparison when third time press in a row(WRONG!) goes to zero!
 	breq zero
-	ldi r16, 0x04
+	ldi r16, 0x04	;if it reaches counter equals 4, the sequence was correct
 	cp r16,counter
-	breq leds
+	breq leds		;leds giving positive feedback
 
 button_D3:
 	cli
 	inc counter
 	nop
 	ldi r16, 1
-	cp r16, counter
+	cp r16, counter ;if it was pressed as first button pressed (WRONG!) goes to zero!
 	breq zero
 	ldi r16, 2
-	cp r16, counter
+	cp r16, counter	;if it was pressed as second button pressed (WRONG!) goes to zero!
 	breq zero
 	ldi r16, 3
-	cp r16, counter
+	cp r16, counter	;GOOD! continue break to "continue"
 	breq continue
 	ldi r16, 4
 	cp r16, counter
 	breq zero
 
 zero:
-	;pin 5 has a yellow led showing when a button was wrong 
+	;pin 5 has a buzzer showing when a button was wrong 
 	;wrong button demands user to start combination lock from the beginning
 	ldi r16, 0x10
 	out portb, r16
@@ -100,7 +101,7 @@ zero:
 	; Clear intf flag
 	ldi r16, (1<<intf0)|(1<<intf1)
 	out eifr, r16
-	reti
+	reti		;interrupt return
 
 continue:
 	; Clear intf flag
@@ -110,8 +111,8 @@ continue:
 	reti
 
 leds:
-	ldi r17, 0x0f
-	ldi r16, 0x00 
+	ldi r17, 0x0f   ; register for LEDs ON
+	ldi r16, 0x00	; register for LEDS OFF
 	out portb, r17
 	call wait
 	call wait
